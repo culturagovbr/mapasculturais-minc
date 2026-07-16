@@ -65,6 +65,57 @@ class OpportunityPhasesTest extends TestCase
         $this->assertNotEmpty($evaluation_phase->type->name);
     }
 
+    function testPhasesIncludesEvaluationPublishTimestampWhenItHasAppealPhase(): void
+    {
+        $admin = $this->userDirector->createUser('admin');
+        $this->login($admin);
+
+        /** @var Opportunity $opportunity */
+        $opportunity = $this->opportunityBuilder
+            ->reset(owner: $admin->profile, owner_entity: $admin->profile)
+            ->fillRequiredProperties()
+            ->firstPhase()
+                ->setRegistrationPeriod(new Open)
+                ->done()
+            ->save()
+            ->addEvaluationPhase(EvaluationMethods::simple)
+                ->setEvaluationPeriod(new ConcurrentEndingAfter)
+                ->save()
+                ->done()
+            ->refresh()
+            ->getInstance();
+
+        $evaluation = $opportunity->evaluationMethodConfiguration;
+        $expectedPublishTimestamp = new \DateTime('2030-01-15 12:30:00');
+        $evaluation->opportunity->publishTimestamp = $expectedPublishTimestamp;
+        $evaluation->opportunity->save(true);
+
+        $className = $evaluation->opportunity->getSpecializedClassName();
+        $appealPhase = new $className();
+        $appealPhase->parent = $evaluation->opportunity;
+        $appealPhase->status = Opportunity::STATUS_APPEAL_PHASE;
+        $appealPhase->name = 'Recurso teste';
+        $appealPhase->ownerEntity = $evaluation->opportunity->ownerEntity;
+        $appealPhase->isDataCollection = true;
+        $appealPhase->isAppealPhase = true;
+        $appealPhase->save(true);
+
+        $evaluation->opportunity->appealPhase = $appealPhase;
+        $evaluation->opportunity->save(true);
+
+        $evaluationPhase = array_values(array_filter(
+            $opportunity->refreshed()->phases,
+            fn($phase) => ($phase->id ?? null) === $evaluation->id
+        ))[0] ?? null;
+
+        $this->assertNotNull($evaluationPhase);
+        $this->assertObjectHasProperty('publishTimestamp', $evaluationPhase->opportunity);
+        $this->assertSame(
+            $expectedPublishTimestamp->format('Y-m-d H:i:s'),
+            $evaluationPhase->opportunity->publishTimestamp->format('Y-m-d H:i:s')
+        );
+    }
+
     /**
      * Garante que, após excluir a primeira fase de avaliação, a segunda fase de avaliação permaneça vinculada à primeira fase de coleta de dados.
      */
