@@ -103,14 +103,13 @@ app.component('opportunity-phases-config', {
         },
 
         showPublishTimestamp(phase) {
-            const previousPhase = this.getPreviousPhase(phase);
             const nextPhase = this.getNextPhase(phase);
 
             if (phase.isLastPhase) {
                 return true;
             } else if (phase.__objectType == 'opportunity' && nextPhase?.__objectType != 'evaluationmethodconfiguration' && phase.publishTimestamp) {
                 return true;
-            } else if (phase.__objectType == 'evaluationmethodconfiguration' && previousPhase.__objectType == 'opportunity' && previousPhase.publishTimestamp) {
+            } else if (phase.__objectType == 'evaluationmethodconfiguration' && phase.opportunity.publishTimestamp) {
                 return true;
             } else {
                 return false;
