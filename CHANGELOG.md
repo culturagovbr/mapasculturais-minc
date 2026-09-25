@@ -7,10 +7,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [UNRELEASED]
 ### Correções
-- Mantém visíveis, após recarregar a página, os filtros individuais configurados para cada pessoa avaliadora na distribuição das avaliações
-
-### Melhorias
-- Ajusta tamanho dos cards da seção "Em destaque" na página inicial
+- Corrige a exibição do plano de metas para aparecer somente quando habilitado e na última etapa visível da inscrição, inclusive com etapas condicionais por categoria, tipo de proponente ou faixa e na tela de suporte
 
 ## [7.8.6] - 2026-08-13
 ### Correções
