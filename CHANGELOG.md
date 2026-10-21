@@ -5,6 +5,29 @@ Todas as mudanças notáveis no projeto serão documentadas neste arquivo.
 O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/)
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.8.20] - 2026-10-20
+### Correções
+- Corrige a exportação da planilha de inscritos para campos do tipo `addresses` (ex.: "Endereço do espaço"), que gerava a coluna vazia mesmo com dados salvos na inscrição
+- Corrige a pergunta "Vai concorrer às cotas?", que já vinha marcada como "Não" e deixava a pessoa enviar a inscrição sem perceber que precisava responder. Agora a pergunta começa sem resposta e, quando habilitada na oportunidade, é obrigatória para enviar a inscrição
+- Corrige a lista de erros ao lado da inscrição, que não mostrava a pergunta "Vai concorrer às cotas?" quando ela estava sem resposta
+- Corrige a edição da inscrição pelo suporte: quem tinha só permissão de visualizar conseguia alterar campos. Agora a alteração é recusada com um aviso claro
+
+### Melhorias
+- Atualiza o PHP para a versão 8.3.36, com as correções de segurança recomendadas pelo próprio PHP
+- Permite liberar a pergunta "Vai concorrer às cotas?" para o suporte e para a edição de campos pelo proponente
+- Deixa a suíte de testes mais rápida e evita que um teste interfira no seguinte
+- Mostra a resposta da pergunta "Vai concorrer às cotas?" na ficha da inscrição
+- Mostra um aviso na configuração do formulário, ao habilitar a pergunta "Vai concorrer às cotas?", explicando que o sistema já inclui essa pergunta e que não é preciso criar outro campo igual
+
+## [7.8.19] - 2026-10-15
+### Correções
+- Corrige a oportunidade criada a partir de modelo, que herdava o subsite do modelo: a oportunidade e todas as suas fases passam a ser criadas no subsite atual, onde o usuário está criando
+- Corrige a oportunidade criada a partir de modelo com resultado publicado, que já nascia com o resultado publicado: a oportunidade e suas fases passam a ser criadas com a publicação do resultado desmarcada
+
+## [7.8.18] - 2026-10-15
+### Correções
+- Corrige a configuração de status da fase, que não era respeitada no formulário do avaliador: status desabilitados (como "Negado" na fase de recurso) continuavam sendo oferecidos e nomes renomeados não apareciam. Os formulários das avaliações simplificada e contínua e o chat da fase de recurso passam a listar apenas os status habilitados na fase, com o nome configurado, e o envio da avaliação com status desabilitado, Rascunho ou Pendente passa a ser recusado
+
 ## [7.8.17] - 2026-10-09
 ### Correções
 - Corrige o aviso "Não foi possível salvar", que ficava na tela até o clique em fechar, passando a sumir sozinho depois de alguns segundos, como as demais mensagens
