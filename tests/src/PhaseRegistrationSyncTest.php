@@ -494,6 +494,80 @@ class PhaseRegistrationSyncTest extends TestCase
     }
 
     /**
+     * Garante que o recurso só deixe de oferecer o Negado quando a configuração manda ocultá-lo.
+     */
+    function testAppealPhaseHidesInvalidStatusOnlyWhenConfigured(): void
+    {
+        $context = $this->buildPnabLikeOpportunity();
+        $appealPhase = $context->coletaMerito->appealPhase;
+        $appealEmc = $appealPhase->evaluationMethodConfiguration;
+        $mainEmc = $context->coletaMerito->evaluationMethodConfiguration;
+
+        $this->assertSame([], $appealPhase->hiddenStatuses, 'Garantindo que, sem configuração, o recurso não oculta status');
+        $this->assertArrayHasKey(
+            Registration::STATUS_INVALID,
+            $appealEmc->evaluationMethod->getEvaluatorStatuses($appealEmc),
+            'Garantindo que, sem configuração, o avaliador do recurso continua vendo o Negado'
+        );
+
+        $this->app->config['opportunityPhase.appeal.hideInvalidStatus'] = true;
+
+        $this->assertSame(
+            [Registration::STATUS_INVALID],
+            $appealPhase->hiddenStatuses,
+            'Garantindo que, com a configuração ligada, o recurso oculta o Negado'
+        );
+        $this->assertSame(
+            [Registration::STATUS_NOTAPPROVED, Registration::STATUS_APPROVED],
+            array_keys($appealEmc->evaluationMethod->getEvaluatorStatuses($appealEmc)),
+            'Garantindo que, com a configuração ligada, o avaliador do recurso vê só Indeferido e Deferido'
+        );
+        $this->assertArrayHasKey(
+            Registration::STATUS_INVALID,
+            $appealPhase->statusLabels ?: $appealEmc->defaultStatuses,
+            'Garantindo que a configuração de status salva no recurso continua com o Negado'
+        );
+        $this->assertSame([], $context->coletaMerito->hiddenStatuses, 'Garantindo que a fase principal não oculta status');
+        $this->assertArrayHasKey(
+            Registration::STATUS_INVALID,
+            $mainEmc->evaluationMethod->getEvaluatorStatuses($mainEmc),
+            'Garantindo que a avaliação da fase principal continua oferecendo a Inválida'
+        );
+    }
+
+    /**
+     * Garante que o chat do recurso recuse o Negado quando a configuração manda ocultá-lo.
+     */
+    function testAppealChatRejectsInvalidStatusWhenHidden(): void
+    {
+        $context = $this->buildPnabLikeOpportunity();
+        $this->createRegistrationsByStatus($context->coletaMerito);
+        $context = $this->refreshContext($context);
+
+        $appeal = $this->sendAppealRegistration($this->createAppealRegistration(
+            $this->findRegistration($context->coletaMerito, '444')
+        ));
+
+        $this->app->config['opportunityPhase.appeal.hideInvalidStatus'] = true;
+
+        $evaluation = $this->sendAppealChatStatus($appeal, Registration::STATUS_INVALID);
+
+        $this->assertNotEquals(
+            Registration::STATUS_INVALID,
+            $evaluation->result,
+            'Garantindo que o chat não grave o Negado quando ele está oculto'
+        );
+
+        $evaluation = $this->sendAppealChatStatus($appeal->refreshed(), Registration::STATUS_NOTAPPROVED);
+
+        $this->assertEquals(
+            Registration::STATUS_NOTAPPROVED,
+            $evaluation->result,
+            'Garantindo que o chat continue gravando o Indeferido quando o Negado está oculto'
+        );
+    }
+
+    /**
      * Garante que inscrições suplente e inválida sigam as mesmas regras de sync de Anexos que a não selecionada.
      *
      * Modo appealPhaseAffectsSync = true: o recurso afeta ativamente a sincronização.
