@@ -62,6 +62,7 @@ class Registration extends \MapasCulturais\Entity
         self::STATUS_INVALID,
         self::STATUS_NOTAPPROVED,
         self::STATUS_WAITLIST,
+        self::STATUS_PARTIALLY_APPROVED,
         self::STATUS_APPROVED,
     ];
 
