@@ -242,7 +242,7 @@ class Module extends \MapasCulturais\EvaluationMethod
             $sections = $result;
         });
 
-        $app->hook('POST(opportunity.applyEvaluationsContinuous)', function() {
+        $app->hook('POST(opportunity.applyEvaluationsContinuous)', function() use ($self) {
             $this->requireAuthentication();
 
             set_time_limit(0);
@@ -268,6 +268,13 @@ class Module extends \MapasCulturais\EvaluationMethod
             }
 
             $new_status = intval($this->data['to']);
+
+            // Aceita o retorno a rascunho ou pendente e os status habilitados na fase.
+            $reset_statuses = [Registration::STATUS_DRAFT, Registration::STATUS_SENT];
+            if (!in_array($new_status, $reset_statuses, true) && !$self->isStatusEnabled($opp, $new_status)) {
+                $this->errorJson(i::__('O status selecionado não está habilitado para esta fase'), 400);
+                die;
+            }
             
             $apply_status = $this->data['status'] ?? false;
             if ($apply_status == 'all') {
@@ -374,12 +381,8 @@ class Module extends \MapasCulturais\EvaluationMethod
 
                     // altera o status de uma avaliação de acordo com o status da mensagem do chat
                     $evaluation = $app->repo('RegistrationEvaluation')->findOneBy(['registration' => $this->thread->ownerEntity]);
-                    $phase = $this->thread->ownerEntity->opportunity;
-                    $status = isset($payload->status) ? (int) $payload->status : null;
-                    $status_allowed = $status === null || (
-                        ($status !== Registration::STATUS_PARTIALLY_APPROVED || $self->acceptsPartialApproval($phase))
-                        && !in_array($status, $phase->hiddenStatuses, true)
-                    );
+                    $status_allowed = !isset($payload->status)
+                        || $self->isStatusEnabled($this->thread->ownerEntity->opportunity, $payload->status);
 
                     if ($evaluation && isset($payload->status) && $status_allowed) {
 
@@ -546,13 +549,13 @@ class Module extends \MapasCulturais\EvaluationMethod
 
 
     /**
-     * Indica se a fase oferece o deferido parcialmente ao avaliador
+     * Indica se o status está habilitado para o avaliador na fase
      */
-    public function acceptsPartialApproval(Entities\Opportunity $opportunity): bool
+    public function isStatusEnabled(Entities\Opportunity $opportunity, $status): bool
     {
         $statuses = $this->getEvaluatorStatuses($opportunity->evaluationMethodConfiguration);
 
-        return array_key_exists(Registration::STATUS_PARTIALLY_APPROVED, $statuses);
+        return is_scalar($status) && array_key_exists((int) $status, $statuses);
     }
 
     function getStatuses() {
